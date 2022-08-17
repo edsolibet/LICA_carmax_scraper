@@ -257,8 +257,8 @@ def carmudi_scrape(_driver):
         except:
             continue
         
-    # info_list = [x for x in info_list if re.search('Gasoline|Diesel|Lpg', x) is not None]
-    # car_list = [x for x in car_list if re.search('^[0-9]{4}\s.*', x) is not None]
+    info_list = [x for x in info_list if re.search('Gasoline|Diesel|Lpg', x) is not None]
+    car_list = [x for x in car_list if re.search('^[0-9]{4}\s.*', x) is not None]
     price_list = [cm_search_price(x)[0] for x in price_list if cm_search_price(x) is not None]
     print ("Found {} prices".format(len(price_list)))
 
