@@ -93,8 +93,8 @@ def autodeal_scrape(_driver):
                          columns=['model', 'transmission', 'fuel_type', 'mileage', 'price'])
     df_ad.insert(2, 'year', df_ad.loc[:, 'model'].apply(lambda x: int(x[:5].strip())))
     df_ad.insert(1, 'make', df_ad.loc[:, 'model'].apply(lambda x: x.split(' ')[1]))
-    df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: ' '.join(x.split(' ')[2:]))
-    df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: re.split('[AM(CV)].?T', x)[0].strip() if re.search('[AM(CV)].?T', x) is not None else x)
+    #df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: ' '.join(x.split(' ')[2:]))
+    #df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: re.split('[AM(CV)].?T', x)[0].strip() if re.search('[AM(CV)].?T', x) is not None else x)
     return df_ad
 
 @st.experimental_memo
@@ -141,7 +141,7 @@ def automart_scrape(_driver):
     am_df = pd.DataFrame(list(zip(car_list, trans_list, fuel_list, dist_list, price_list)), columns = ['model', 'transmission', 'fuel_type', 'mileage', 'price'])
     am_df.insert(2, 'year', am_df.loc[:, 'model'].apply(lambda x: int(x[:4].strip())))
     am_df.insert(1, 'make', am_df.loc[:, 'model'].apply(lambda x: x[5:].split(' ')[0].strip()))
-    am_df.loc[:, 'model'] = am_df.loc[:, 'model'].apply(lambda x: ' '.join(x[5:].split(' ')[1:]).strip())
+    # am_df.loc[:, 'model'] = am_df.loc[:, 'model'].apply(lambda x: ' '.join(x[5:].split(' ')[1:]).strip())
     am_df.loc[:, 'mileage'] = am_df.loc[:,'mileage'].apply(lambda x: float(fix_mileage(x)) if fix_mileage(x).isnumeric() is not False else 0)
     am_df.loc[:, 'price'] = am_df.loc[:,'price'].apply(lambda x: float(''.join(x[2:].split(','))))
     trans_dict = {'AT': 'Automatic', 'MT': 'Manual', 'CVT': 'CVT'}
@@ -302,7 +302,7 @@ site_last_page = {'autodeal': {'url': 'https://www.autodeal.com.ph/used-cars/sea
 if __name__ == '__main__':
     st.title('Carmax Competitor Product Scraper')
     st.markdown('''
-                This app collects product info from Gulong.ph and other competitor platforms.
+                This app collects product info from CarMmax and other competitor platforms.
                 ''')
     # driver_path = os.getcwd() + '\\chromedriver'
     # driver = Chrome(driver_path, options=options)
@@ -320,7 +320,7 @@ if __name__ == '__main__':
         key='download-autodeal-csv'
         )
     
-    '''
+    
     st.write('Automart product scraper')
     df_am = automart_scrape(driver)
     show_table(df_am)
@@ -331,7 +331,7 @@ if __name__ == '__main__':
         file_name = "automart_prices.csv",
         key='download-automart-csv'
         )
-    '''
+    
     '''
     carmudi_data = carmudi_scrape(driver)
     df_cm = carmudi_dataframe(carmudi_data)
