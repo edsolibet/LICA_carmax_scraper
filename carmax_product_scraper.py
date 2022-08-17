@@ -225,7 +225,7 @@ def carmudi_scrape(_driver):
     last_height = driver.execute_script("return document.documentElement.scrollHeight")
     print ('last height: {}'.format(last_height))
     mybar = st.progress(0)
-    num_cars = int(driver.find_element(By.XPATH, '//*[contains(text(), "Used Cars available for sale in the Philippines")]')[0].text.strip().split(' ')[0])
+    num_cars = int(driver.find_element(By.XPATH, '//*[contains(text(), "Used Cars available for sale in the Philippines")]').text.strip().split(' ')[0])
     while True:
         #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
