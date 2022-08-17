@@ -192,7 +192,7 @@ def carmudi_dataframe(scrape_list):
     # Setup DataFrame
     df_cm = pd.DataFrame(zip(car_list, info_list, price_list), columns=['car', 'info', 'price'])
     # car info
-    df_cm.insert(0, 'make', df_cm.loc[:, 'car'].apply(lambda x: x.split(' ')[1].strip()))
+    df_cm.insert(0, 'make', df_cm.loc[:, 'car'].apply(lambda x: x.split(' ')[1].strip() if (len(x.split(' ')) > 1) else x.strip()))
     df_cm.insert(1, 'model', df_cm.loc[:, 'car'].apply(lambda x: ' '.join(x.split(' ')[2:]).strip()))
     df_cm.insert(2, 'year', df_cm.loc[:, 'car'].apply(lambda x: int(x[:4].strip())))
     # price
