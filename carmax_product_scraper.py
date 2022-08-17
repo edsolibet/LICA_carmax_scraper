@@ -89,8 +89,8 @@ def autodeal_scrape(_driver):
     mileage = get_re_match(info_list, 'mileage')
     transmission = get_re_match(info_list, 'transmission')
     fuel = get_re_match(info_list, 'fuel')
-    df_ad = pd.DataFrame(list(zip(cars, mileage, transmission, fuel, price)), 
-                         columns=['model', 'transmission', 'fuel_type', 'mileage', 'price'])
+    df_ad = pd.DataFrame(list(zip(cars, transmission, mileage, fuel, price)), 
+                         columns=['model', 'transmission', 'mileage', 'fuel_type', 'price'])
     df_ad.insert(2, 'year', df_ad.loc[:, 'model'].apply(lambda x: int(x[:5].strip())))
     df_ad.insert(1, 'make', df_ad.loc[:, 'model'].apply(lambda x: x.split(' ')[1]))
     #df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: ' '.join(x.split(' ')[2:]))
@@ -133,7 +133,7 @@ def automart_scrape(_driver):
             except:
                 continue
         print ('Obtained {} cars'.format(len(car_list)))
-        mybar.progress(round((page+1)/last_page, 2))
+        mybar.progress(round((page-1)/last_page, 2))
     mybar.empty()
     trans_list = [info_list[t*4] for t in range(int(len(info_list)/4))]
     dist_list = [info_list[4*t+1] for t in range(int(len(info_list)/4))]
