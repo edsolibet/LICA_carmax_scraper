@@ -82,7 +82,7 @@ def autodeal_scrape(_driver):
                 price_list.append(price[p].text)
             except:
                 continue
-        mybar.progress(round((page+1)/last_page, 2))
+        mybar.progress(round((page-1)/last_page, 2))
     mybar.empty()
     cars = get_re_match(car_list, 'car')
     price = get_re_match(price_list, 'price')
@@ -263,7 +263,7 @@ def carmudi_scrape(_driver):
 def show_table(df):
     # table settings
 
-    gb = GridOptionsBuilder.from_dataframe(df.sort_values(by='name'))
+    gb = GridOptionsBuilder.from_dataframe(df.sort_values(by='model'))
     gb.configure_default_column(min_column_width=8)
     gridOptions = gb.build()
     
@@ -273,10 +273,11 @@ def show_table(df):
         gridOptions=gridOptions,
         data_return_mode='AS_INPUT', 
         update_mode='MODEL_CHANGED', 
-        fit_columns_on_grid_load=True,
+        fit_columns_on_grid_load=False,
+        autoSizeColumn = 'model',
         theme='blue', #Add theme color to the table
         enable_enterprise_modules=True,
-        height=500, 
+        height=400, 
         reload_data=False)
     
 @st.experimental_memo
@@ -307,8 +308,10 @@ if __name__ == '__main__':
     # driver = Chrome(driver_path, options=options)
     driver = Chrome(options=options)
     df_ad = autodeal_scrape(driver)
-    st.write('Found {} Autodeal cars for sale.'.format(len(df_ad)))
+    
+    st.write('AutoDeal product scraper')
     show_table(df_ad)
+    st.write('Found {} Autodeal cars for sale.'.format(len(df_ad)))
     
     st.download_button(
         label ="Download Autodeal table",
@@ -317,16 +320,18 @@ if __name__ == '__main__':
         key='download-autodeal-csv'
         )
     
+    '''
+    st.write('Automart product scraper')
     df_am = automart_scrape(driver)
-    st.write('Found {} Automart cars for sale.'.format(len(df_am)))
     show_table(df_am)
+    st.write('Found {} Automart cars for sale.'.format(len(df_am)))
     st.download_button(
         label ="Download Automart table",
         data = convert_csv(df_am),
         file_name = "automart_prices.csv",
         key='download-automart-csv'
         )
-    
+    '''
     '''
     carmudi_data = carmudi_scrape(driver)
     df_cm = carmudi_dataframe(carmudi_data)
