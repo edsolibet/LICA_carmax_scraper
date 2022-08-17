@@ -1,0 +1,7 @@
+streamlit>=1.12.0
+plotly
+selenium==4.2.0
+streamlit-aggrid
+scikit-learn
+lifetimes
+
