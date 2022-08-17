@@ -219,11 +219,13 @@ def carmudi_scrape(_driver):
     except:
         pass
     
+    
     car_list, price_list, info_list = list(), list(), list()
     #last_height = driver.execute_script("return document.body.scrollHeight")
     last_height = driver.execute_script("return document.documentElement.scrollHeight")
     print ('last height: {}'.format(last_height))
     mybar = st.progress(0)
+    num_cars = int(driver.find_element(By.XPATH, '//*[contains(text(), "Used Cars available for sale in the Philippines")]')[0].text.strip().split(' ')[0])
     while True:
         #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
@@ -242,6 +244,8 @@ def carmudi_scrape(_driver):
             else:
                 pass
         last_height = new_height
+        mybar.progress(round((new_height/100)/num_cars, 2))
+    mybar.empty()
     info = driver.find_elements_by_css_selector('p.shortDescription')
     cars = driver.find_elements_by_css_selector('a')
     price = driver.find_elements_by_css_selector('div.new__car__price')
@@ -332,7 +336,7 @@ if __name__ == '__main__':
         key='download-automart-csv'
         )
     
-    '''
+    st.write('Carmudi product scraper')
     carmudi_data = carmudi_scrape(driver)
     df_cm = carmudi_dataframe(carmudi_data)
     st.write('Found {} Carmudi cars for sale.'.format(len(df_cm)))
@@ -345,7 +349,6 @@ if __name__ == '__main__':
         key='download-carmudi-csv'
         )
     
-    '''
     st.warning('''
                 If you need to update the lists, the button below will clear the
                 cache and rerun the app.
