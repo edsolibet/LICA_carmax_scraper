@@ -267,13 +267,13 @@ def carmudi_scrape(_driver):
 def show_table(df):
     # table settings
 
-    gb = GridOptionsBuilder.from_dataframe(df.sort_values(by='model'))
+    gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(min_column_width=8)
     gridOptions = gb.build()
     
     # selection settings
     AgGrid(
-        df.sort_values(by='model'),
+        df,
         gridOptions=gridOptions,
         data_return_mode='AS_INPUT', 
         update_mode='MODEL_CHANGED', 
