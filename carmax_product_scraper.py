@@ -279,7 +279,6 @@ def show_table(df):
         update_mode='MODEL_CHANGED', 
         fit_columns_on_grid_load=False,
         autoSizeColumn = 'model',
-        theme='blue', #Add theme color to the table
         enable_enterprise_modules=True,
         height=400, 
         reload_data=False)
