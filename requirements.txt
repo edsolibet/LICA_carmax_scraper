@@ -3,7 +3,8 @@ plotly
 matplotlib
 selenium==4.2.0
 streamlit-aggrid
-scikit-learn
 seaborn
 lifetimes
+pytz
+gspread
 
