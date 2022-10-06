@@ -8,7 +8,10 @@ import pandas as pd
 import numpy as np
 import re, os
 from datetime import datetime
+import datetime as dt
 import time
+import gspread
+from pytz import timezone
 
 import streamlit as st
 from selenium.webdriver import Chrome
@@ -28,6 +31,9 @@ options.add_argument("--disable-gpu")
 options.add_argument("--disable-features=NetworkService")
 options.add_argument("--window-size=1920x1080")
 options.add_argument("--disable-features=VizDisplayCompositor")
+
+# set timezone
+phtime = timezone('Asia/Manila')
 
 def get_last_page(driver, url_dict):
     '''
@@ -279,6 +285,7 @@ def show_table(df):
         update_mode='MODEL_CHANGED', 
         fit_columns_on_grid_load=False,
         autoSizeColumn = 'model',
+        theme='blue', #Add theme color to the table
         enable_enterprise_modules=True,
         height=400, 
         reload_data=False)
@@ -297,6 +304,45 @@ def update():
     st.experimental_rerun()
 
 
+@st.experimental_memo
+def write_to_gsheet(df, key):
+    '''
+    Creates new sheet in designated googlesheet and writes selected data from df
+    
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to write to google sheet
+    
+    '''
+    credentials = {
+      "type": "service_account",
+      "project_id": "xenon-point-351408",
+      "private_key_id": "f19cf14da43b38064c5d74ba53e2c652dba8cbfd",
+      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC5fe2N4yS74jTP\njiyv1EYA+XgnrTkZHwMx4ZY+zLuxx/ODPGxJ3m2e6QRUtz6yBUp1DD3nvzaMYY2d\nea6ti0fO2EPmmNIAZzgWVMOqaGePfXZPN1YN5ncLegZFheZuDrsz0/E+KCVUpLbr\nWBRTBF7l0sZ7paXZsVYOu/QAJI1jPRNF3lFUxMDSE8eGx+/oUmomtl+NfCi/FEJ5\nFCU4pF1FQNmVo885HGe9Tx7UywgaXRvAGJZlA4WVie4d5Jhj8LjZRhSH8+uDgdGX\ngc/4GI8U831oQ2lHsrtYIHHNzs1EG/8Ju+INdgR/Zc5SxNx/BSF8gV7kSueEd8+/\nXlobf5JZAgMBAAECggEAHRPWBOuKCx/jOnQloiyLCsUQplubu0nmxM+Br3eFptFa\n5YQ3z36cPZB2mtcc72gv61hPbgBGC0yRmBGGpfLS/2RchI4JQYHsw2dnQtPaBB7d\nSH66sTQjDjwDNqvOWwtZIj9DroQ5keK+P/dPPFJPlARuE9z8Ojt365hgIBOazGb2\ngIh9wLXrVq7Ki8OXI+/McrxkH3tDksVH2LmzKGtWBA56MRY0v9vnJFjVd+l8Q+05\nIw4lQXt55dK7EmRLIfLnawHYIvnpalCWPe6uAmCTeoOuGASLFJJR2uzcOW9IxM0a\nMkR2dduu5vQl/ahJwxZ2cH40QJUdy7ECQg5QG4qL1wKBgQDugyaPEdoUCGC6MUas\nFR4kwDIkHj/UkgzYtsemmGG0rXCqVtIerPd6FvtKlN8BDzQbyqCaw/pDUqjFoGXN\nW969vkN5Uj9YaQ5qV8c9WLbCcMw9gT6rvqyC8b8FgwaWMKHx7TgI/8xXQ666XqpT\nMTAfINWWei0e/Scqqu6hw0v+UwKBgQDHF5ce9y9mHdVb8B7m0Oz4QIHksktKfoQa\nLoGS601zK6Rr6GeEHb03s4KLG5q9L/o9HUTXqyKERnofdEdfsGsnrKbz2Wsnr8Mk\nGwnNcPTvI3uYkeTBS4paNUxZyGVbxDOrRbBYukgwacaUIGbZ5+we1BxlVN04+l5W\nvAlNEvlfIwKBgBWMcdJhOYOv0hVgWFM5wTRuzNjohrnMzC5ULSuG/uTU+qXZHDi7\nRcyZAPEXDCLLXdjY8LOq2xR0Bl18hVYNY81ewDfYz3JMY4oGDjEjr7dXe4xe/euE\nWY+nCawUz2aIVElINlTRz4Ne0Q1zeg30FrXpQILM3QC8vGolcVPaEiaTAoGBALj7\nNjJTQPsEZSUTKeMT49mVNhsjfcktW9hntYSolEGaHx8TxHqAlzqV04kkkNWPKlZ2\nR2yLWXrFcNqg02AZLraiOE0BigpJyGpXpPf5J9q5gTD0/TKL2XSPaO1SwLpOxiMw\nkPUfv8sbvKIMqQN19XF/axLLkvBJ0DWOaKXwJzs5AoGAbO2BfPYQke9K1UhvX4Y5\nbpj6gMzaz/aeWKoC1KHijEZrY3P58I1Tt1JtZUAR+TtjpIiDY5D2etVLaLeL0K0p\nrti40epyx1RGo76MI01w+rgeZ95rmkUb9BJ3bG5WBrbrvMIHPnU+q6XOqrBij3pF\nWQAQ7pYkm/VubZlsFDMvMuA=\n-----END PRIVATE KEY-----\n",
+      "client_email": "googlesheetsarvin@xenon-point-351408.iam.gserviceaccount.com",
+      "client_id": "108653350174528163497",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token",
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/googlesheetsarvin%40xenon-point-351408.iam.gserviceaccount.com"
+    }
+    
+    gsheet_key = key
+    gc = gspread.service_account_from_dict(credentials)
+    sh = gc.open_by_key(gsheet_key)
+    
+    new_sheet_name = datetime.strftime(phtime.localize(datetime.today()),"%B_%d")
+    r,c = df.shape
+    
+    try:
+        sh.add_worksheet(title=new_sheet_name,rows = r+1, cols = c+1)
+        worksheet = sh.worksheet(new_sheet_name)
+    except:
+        worksheet = sh.worksheet(new_sheet_name)
+        worksheet.clear()
+    worksheet.update([df.columns.tolist()]+df.values.tolist())
+
 site_last_page = {'autodeal': {'url': 'https://www.autodeal.com.ph/used-cars/search/certified-pre-owned+repossessed+used-car-status/page-1?sort-by=relevance',
                                'xpath': '//a[@class="darklink paginator-page"]'},
                   'automart': {'url': 'https://automart.ph/all',
@@ -307,52 +353,67 @@ if __name__ == '__main__':
     st.markdown('''
                 This app collects product info from CarMmax and other competitor platforms.
                 ''')
-    # driver_path = os.getcwd() + '\\chromedriver'
-    # driver = Chrome(driver_path, options=options)
-    driver = Chrome(options=options)
-    df_ad = autodeal_scrape(driver)
-    
-    st.write('AutoDeal product scraper')
-    show_table(df_ad)
-    st.write('Found {} Autodeal cars for sale.'.format(len(df_ad)))
-    
-    st.download_button(
-        label ="Download Autodeal table",
-        data = convert_csv(df_ad),
-        file_name = "autodeal_prices.csv",
-        key='download-autodeal-csv'
-        )
-    
-    
-    st.write('Automart product scraper')
-    df_am = automart_scrape(driver)
-    show_table(df_am)
-    st.write('Found {} Automart cars for sale.'.format(len(df_am)))
-    st.download_button(
-        label ="Download Automart table",
-        data = convert_csv(df_am),
-        file_name = "automart_prices.csv",
-        key='download-automart-csv'
-        )
-    
-    st.write('Carmudi product scraper')
-    carmudi_data = carmudi_scrape(driver)
-    df_cm = carmudi_dataframe(carmudi_data)
-    st.write('Found {} Carmudi cars for sale.'.format(len(df_cm)))
-    show_table(df_cm)
-    
-    st.download_button(
-        label ="Download Carmudi table",
-        data = convert_csv(df_cm),
-        file_name = "carmudi_prices.csv",
-        key='download-carmudi-csv'
-        )
-    
-    st.warning('''
-                If you need to update the lists, the button below will clear the
-                cache and rerun the app.
-                ''')
-             
-    if st.button('Update'):
-        update()
+    while True:
+        # driver_path = os.getcwd() + '\\chromedriver'
+        # driver = Chrome(driver_path, options=options)
+        driver = Chrome(options=options)
+        df_ad = autodeal_scrape(driver)
+        
+        st.write('AutoDeal product scraper')
+        show_table(df_ad)
+        # write to gsheet
+        write_to_gsheet(df_ad.fillna(''), "1-vHbqVXA40iQ_7Rwg14wB6C7ZMQYgAJZjpG_PzuCE5U")
+        st.write('Found {} Autodeal cars for sale.'.format(len(df_ad)))
+        
+        st.download_button(
+            label ="Download Autodeal table",
+            data = convert_csv(df_ad),
+            file_name = "autodeal_prices.csv",
+            key='download-autodeal-csv'
+            )
+        
+        
+        st.write('Automart product scraper')
+        df_am = automart_scrape(driver)
+        show_table(df_am)
+        # write to gsheet
+        write_to_gsheet(df_am.fillna(''), "1NwXaka7uGcg3sI_VedpkjuS0FivdTEyS-oZCTjFC1aE")
+        st.write('Found {} Automart cars for sale.'.format(len(df_am)))
+        st.download_button(
+            label ="Download Automart table",
+            data = convert_csv(df_am),
+            file_name = "automart_prices.csv",
+            key='download-automart-csv'
+            )
+        
+        st.write('Carmudi product scraper')
+        carmudi_data = carmudi_scrape(driver)
+        df_cm = carmudi_dataframe(carmudi_data)
+        show_table(df_cm)
+        # write to gsheet
+        write_to_gsheet(df_cm.fillna(''), "19VRpKXAYwa5foyTy18ktqrLhfsix0Rc6U2Tnm8KHVeQ")
+        st.write('Found {} Carmudi cars for sale.'.format(len(df_cm)))
+        
+        st.download_button(
+            label ="Download Carmudi table",
+            data = convert_csv(df_cm),
+            file_name = "carmudi_prices.csv",
+            key='download-carmudi-csv'
+            )
+        
+        # refresh every hour
+        time_now = phtime.localize(datetime.now())
+        time_update = st.time_input('Set hour to update',
+                                    value = dt.time(3,0, tzinfo=phtime))
+        
+        st.info(f'''Current hour: {((time_now.hour + 8) % 24)} \n 
+                Update hour: {time_update.hour}''')
+        
+        if ((time_now.hour+8) % 24) == time_update.hour:
+            update()
+        
+        if st.button('Manual update'):
+            update()
+        # update loop every hour
+        time.sleep(3600)
         
