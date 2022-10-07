@@ -20,7 +20,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from st_aggrid import GridOptionsBuilder, AgGrid
-st.set_page_config(page_icon=":chart_with_upwards_trend:", page_title="Carmax Product Scraper")
 
 # to run selenium in headless mode (no user interface/does not open browser)
 options = Options()
@@ -57,6 +56,21 @@ def get_re_match(list_, info_type):
         return list_[1::3]
     elif info_type == 'fuel':
         return list_[2::3]
+
+def mileage_bracket(mileage):
+    if mileage is not None:
+        if mileage <= 15000:
+            return '0-15,000 km'
+        elif (mileage >= 15000) and (mileage < 30000):
+            return '15,000-30,000 km'
+        elif (mileage >= 30000) and (mileage < 60000):
+            return '30,000-60,000 km'
+        elif (mileage >= 60000) and (mileage < 100000):
+            return '60,000-100,000 km'
+        else:
+            return '>100,000 km'
+    else:
+        return ''
 
 @st.experimental_memo
 def autodeal_scrape(_driver):
@@ -99,8 +113,10 @@ def autodeal_scrape(_driver):
                          columns=['model', 'transmission', 'mileage', 'fuel_type', 'price'])
     df_ad.insert(2, 'year', df_ad.loc[:, 'model'].apply(lambda x: int(x[:5].strip())))
     df_ad.insert(1, 'make', df_ad.loc[:, 'model'].apply(lambda x: x.split(' ')[1]))
+    df_ad.loc[:,'mileage'] = df_ad.apply(lambda x: mileage_bracket(x['mileage']), axis=1)
     #df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: ' '.join(x.split(' ')[2:]))
     #df_ad.loc[:, 'model'] = df_ad.loc[:, 'model'].apply(lambda x: re.split('[AM(CV)].?T', x)[0].strip() if re.search('[AM(CV)].?T', x) is not None else x)
+    df_ad.loc[:, 'platform'] = 'autodeal'
     return df_ad
 
 @st.experimental_memo
@@ -148,10 +164,11 @@ def automart_scrape(_driver):
     am_df.insert(2, 'year', am_df.loc[:, 'model'].apply(lambda x: int(x[:4].strip())))
     am_df.insert(1, 'make', am_df.loc[:, 'model'].apply(lambda x: x[5:].split(' ')[0].strip()))
     # am_df.loc[:, 'model'] = am_df.loc[:, 'model'].apply(lambda x: ' '.join(x[5:].split(' ')[1:]).strip())
-    am_df.loc[:, 'mileage'] = am_df.loc[:,'mileage'].apply(lambda x: float(fix_mileage(x)) if fix_mileage(x).isnumeric() is not False else 0)
+    am_df.loc[:, 'mileage'] = am_df.loc[:,'mileage'].apply(lambda x: mileage_bracket(float(fix_mileage(x))) if fix_mileage(x).isnumeric() is not False else 0)
     am_df.loc[:, 'price'] = am_df.loc[:,'price'].apply(lambda x: float(''.join(x[2:].split(','))))
     trans_dict = {'AT': 'Automatic', 'MT': 'Manual', 'CVT': 'CVT'}
     am_df.loc[:,'transmission'] = am_df.loc[:,'transmission'].apply(lambda x: trans_dict[x])
+    am_df.loc[:, 'platform'] = 'automart'
     return am_df
 
 def cm_search_price(x):
@@ -206,7 +223,8 @@ def carmudi_dataframe(scrape_list):
     # info
     df_cm.insert(3, 'transmission', df_cm.loc[:,'info'].apply(lambda x: re.search('[AM(CV)].?T', x)[0] if re.search('[AM(CV)].?T', x) is not None else np.NaN)) 
     df_cm.insert(4, 'fuel_type', df_cm.loc[:,'info'].apply(lambda x: extract_fuel_type(x)[0] if extract_fuel_type(x) is not None else np.NaN))
-    df_cm.insert(5, 'mileage', df_cm.loc[:,'info'].apply(lambda x: mileage_str_to_num(x) if re.search('.*[0-9]*KM', x) is not None else np.NaN))
+    df_cm.insert(5, 'mileage', df_cm.loc[:,'info'].apply(lambda x: mileage_bracket(mileage_str_to_num(x)) if re.search('.*[0-9]*KM', x) is not None else np.NaN))
+    df_cm.loc[:, 'platform'] = 'carmudi'
     # df_cm.loc[:, 'info'] = df_cm.loc[:,'info'].apply(lambda x: cleanup_info(x))
     # drop info feature
     df_cm = df_cm.drop(['info', 'car'], axis=1)
@@ -361,8 +379,7 @@ if __name__ == '__main__':
         
         st.write('AutoDeal product scraper')
         show_table(df_ad)
-        # write to gsheet
-        write_to_gsheet(df_ad.fillna(''), "1-vHbqVXA40iQ_7Rwg14wB6C7ZMQYgAJZjpG_PzuCE5U")
+        
         st.write('Found {} Autodeal cars for sale.'.format(len(df_ad)))
         
         st.download_button(
@@ -376,8 +393,6 @@ if __name__ == '__main__':
         st.write('Automart product scraper')
         df_am = automart_scrape(driver)
         show_table(df_am)
-        # write to gsheet
-        write_to_gsheet(df_am.fillna(''), "1NwXaka7uGcg3sI_VedpkjuS0FivdTEyS-oZCTjFC1aE")
         st.write('Found {} Automart cars for sale.'.format(len(df_am)))
         st.download_button(
             label ="Download Automart table",
@@ -390,8 +405,6 @@ if __name__ == '__main__':
         carmudi_data = carmudi_scrape(driver)
         df_cm = carmudi_dataframe(carmudi_data)
         show_table(df_cm)
-        # write to gsheet
-        write_to_gsheet(df_cm.fillna(''), "19VRpKXAYwa5foyTy18ktqrLhfsix0Rc6U2Tnm8KHVeQ")
         st.write('Found {} Carmudi cars for sale.'.format(len(df_cm)))
         
         st.download_button(
@@ -401,19 +414,8 @@ if __name__ == '__main__':
             key='download-carmudi-csv'
             )
         
-        # refresh every hour
-        time_now = phtime.localize(datetime.now())
-        time_update = st.time_input('Set hour to update',
-                                    value = dt.time(3,0, tzinfo=phtime))
+        df_merged = pd.concat([df_ad, df_am, df_cm], axis=0)
+        # write to gsheet
+        write_to_gsheet(df_merged.fillna(''), "1-vHbqVXA40iQ_7Rwg14wB6C7ZMQYgAJZjpG_PzuCE5U")
         
-        st.info(f'''Current hour: {((time_now.hour + 8) % 24)} \n 
-                Update hour: {time_update.hour}''')
-        
-        if ((time_now.hour+8) % 24) == time_update.hour:
-            update()
-        
-        if st.button('Manual update'):
-            update()
-        # update loop every hour
-        time.sleep(3600)
         
